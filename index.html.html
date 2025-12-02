@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>🌱 Grow a Garden 2D 🌱</title>
+</head>
+<html>
+<style>
+  body { font-family: sans-serif; text-align: center; background: #ccefcf; }
+  canvas { border: 2px solid #333; background: #228B22; display: block; margin: 20px auto; }
+  #hud { display: flex; justify-content: space-between; width: 1000px; margin: 10px auto; }
+  #left, #right { display: flex; flex-direction: column; }
+  button { margin: 3px; padding: 6px; cursor: pointer; }
+</style>
+</head>
+<body>
+<h1>🌱 Grow a Garden 2D 🌱</h1>
+<div id="hud">
+  <div id="left">
+    <div>Waluta: <span id="currency">100</span> C$</div>
+    <div>Nasiona: 
+      Seed <span id="seedSeed">0</span>, 
+      Tomato <span id="seedTomato">0</span>, 
+      Tree <span id="seedTree">0</span>, 
+      Mango <span id="seedMango">0</span>,
+      Sugar Apple <span id="seedSugarApple">0</span>,
+      Dagon <span id="seedDagon">0</span>,
+      Coconut <span id="seedCoconut">0</span>,
+      Bone Blossom <span id="seedBoneBlossom">0</span>,
+      Cocoa <span id="seedCocoa">0</span>,
+      Paper <span id="seedPaper">0</span>
+    </div>
+    <!-- Sklep -->
+    <button onclick="buySeed('Seed')">Kup Seed (10 C$)</button>
+    <button onclick="buySeed('Tomato')">Kup Tomato (20 C$)</button>
+    <button onclick="buySeed('Tree')">Kup Tree (50 C$)</button>
+    <button onclick="buySeed('Mango')">Kup Mango (150 C$)</button>
+    <button onclick="buySeed('SugarApple')">Kup Sugar Apple (235 C$)</button>
+    <button onclick="buySeed('Dagon')">Kup Dagon (340 C$)</button>
+    <button onclick="buySeed('Coconut')">Kup Coconut (200 C$)</button>
+    <button onclick="buySeed('BoneBlossom')">Kup Bone Blossom (5000 C$)</button>
+    <button onclick="buySeed('Cocoa')">Kup Cocoa (400 C$)</button>
+    <button onclick="buySeed('Paper')">Kup Paper (600 C$)</button>
+  </div>
+  <div id="right">
+    <!-- Sadzenie -->
+    <button onclick="plantSeed('Seed')">Posadź Seed</button>
+    <button onclick="plantSeed('Tomato')">Posadź Tomato</button>
+    <button onclick="plantSeed('Tree')">Posadź Tree</button>
+    <button onclick="plantSeed('Mango')">Posadź Mango</button>
+    <button onclick="plantSeed('SugarApple')">Posadź Sugar Apple</button>
+    <button onclick="plantSeed('Dagon')">Posadź Dagon</button>
+    <button onclick="plantSeed('Coconut')">Posadź Coconut</button>
+    <button onclick="plantSeed('BoneBlossom')">Posadź Bone Blossom</button>
+    <button onclick="plantSeed('Cocoa')">Posadź Cocoa</button>
+    <button onclick="plantSeed('Paper')">Posadź Paper</button>
+    <button onclick="plantAllSeeds()">🌾 Posadź wszystkie nasiona</button>
+    <button id="autoPlantBtn">Auto Posadź: OFF</button>
+    <button onclick="sellPlants()">💰 Sprzedaj wszystkie rośliny</button>
+    <button id="gameBassBtn">🎟️ Kup Game Pass (20000 C$) - 2x C$</button>
+  </div>
+</div>
+<canvas id="gameCanvas" width="600" height="450"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+let currency = 100;
+let doubleCash = false;
+let gameBassBought = false;
+
+let seeds = { Seed:0, Tomato:0, Tree:0, Mango:0, SugarApple:0, Dagon:0, Coconut:0, BoneBlossom:0, Cocoa:0, Paper:0 };
+
+const prices = {
+  Seed: {buy:10, sell:15, size:10},
+  Tomato: {buy:20, sell:30, size:15},
+  Tree: {buy:50, sell:100, size:30},
+  Mango: {buy:150, sell:210, size:20},
+  SugarApple: {buy:235, sell:275, size:18},
+  Dagon: {buy:340, sell:450, size:25},
+  Coconut: {buy:200, sell:250, size:22},
+  BoneBlossom: {buy:5000, sell:7500, size:28}, 
+  Cocoa: {buy:400, sell:520, size:20},
+  Paper: {buy:600, sell:800, size:24}
+};
+
+let plants = [];
+let autoPlant = false;
+let autoPlantInterval = null;
+
+function buySeed(type){
+  if(currency >= prices[type].buy){
+    currency -= prices[type].buy;
+    seeds[type]++;
+    updateHUD();
+  } else alert("Nie masz wystarczająco C$!");
+}
+
+function plantSeed(type){
+  if(seeds[type] > 0){
+    seeds[type]--;
+    const x = Math.random()*(canvas.width-40)+20;
+    const y = Math.random()*(canvas.height-40)+20;
+    plants.push({x, y, growth:0, type});
+    updateHUD();
+  } else alert("Nie masz nasion " + type + "!");
+}
+
+function plantAllSeeds(){
+  Object.keys(seeds).forEach(type=>{
+    while(seeds[type] > 0) plantSeed(type);
+  });
+}
+
+document.getElementById('autoPlantBtn').addEventListener('click', ()=>{
+  autoPlant = !autoPlant;
+  document.getElementById('autoPlantBtn').innerText = autoPlant ? "Auto Posadź: ON" : "Auto Posadź: OFF";
+  if(autoPlant) autoPlantInterval = setInterval(plantAllSeeds,2000);
+  else clearInterval(autoPlantInterval);
+});
+
+document.getElementById('gameBassBtn').addEventListener('click', ()=>{
+  if(gameBassBought){ alert("Game Pass można kupić tylko raz!"); return; }
+  if(currency >= 20000){ currency-=20000; doubleCash=true; gameBassBought=true; alert("Game Pass kupiony! Wszystkie rośliny dają 2x C$"); updateHUD();}
+  else alert("Nie masz wystarczająco C$ na Game Pass!");
+});
+
+function sellPlants(){
+  if(plants.length > 0){
+    plants.forEach(p=>{
+      let cash = prices[p.type].sell;
+      if(doubleCash) cash *= 2;
+      currency += cash;
+    });
+    plants = [];
+    updateHUD();
+  } else alert("Nie masz roślin do sprzedaży!");
+}
+
+function updateHUD(){
+  document.getElementById('currency').innerText = currency;
+  Object.keys(seeds).forEach(type=>{
+    document.getElementById('seed'+type).innerText = seeds[type];
+  });
+}
+
+function draw(){
+  ctx.fillStyle = '#228B22';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  plants.forEach(p=>{
+    p.growth += 0.01;
+    const size = Math.min(prices[p.type].size, p.growth * prices[p.type].size);
+
+    switch(p.type){
+      case "Seed": ctx.fillStyle='#8B4513'; ctx.fillRect(p.x-size/2,p.y-size/2,size,size); break;
+      case "Tomato": ctx.fillStyle='#FF6347'; ctx.beginPath(); ctx.arc(p.x,p.y,size/2,0,Math.PI*2); ctx.fill(); break;
+      case "Tree": ctx.fillStyle='#006400'; ctx.fillRect(p.x-size/2,p.y-size,size,size*1.5); break;
+      case "Mango": ctx.fillStyle='#FFA500'; ctx.beginPath(); ctx.ellipse(p.x,p.y,size/2,size,0,0,Math.PI*2); ctx.fill(); break;
+      case "SugarApple": ctx.fillStyle='#ADFF2F'; ctx.beginPath(); ctx.arc(p.x,p.y,size/2,0,Math.PI*2); ctx.fill(); break;
+      case "Dagon": ctx.fillStyle='#9400D3'; ctx.beginPath(); ctx.arc(p.x,p.y,size/2,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#4B0082'; ctx.stroke(); break;
+      case "Coconut": ctx.fillStyle='#8B4513'; ctx.beginPath(); ctx.arc(p.x,p.y,size/2,0,Math.PI*2); ctx.fill(); break;
+      case "BoneBlossom":
+        ctx.fillStyle='#00FFFF';
+        ctx.beginPath();
+        ctx.moveTo(p.x,p.y-size/2);
+        ctx.bezierCurveTo(p.x+size/2,p.y-size/4,p.x+size/2,p.y+size/4,p.x,p.y+size/2);
+        ctx.bezierCurveTo(p.x-size/2,p.y+size/4,p.x-size/2,p.y-size/4,p.x,p.y-size/2);
+        ctx.fill();
+        ctx.strokeStyle='#0000FF';
+        ctx.stroke();
+        break;
+      case "Cocoa": ctx.fillStyle='#A0522D'; ctx.beginPath(); ctx.arc(p.x,p.y,size/2,0,Math.PI*2); ctx.fill(); break;
+      case "Paper": ctx.fillStyle='#F5F5F5'; ctx.fillRect(p.x-size/2,p.y-size/2,size,size*1.2); ctx.strokeStyle='#808080'; ctx.strokeRect(p.x-size/2,p.y-size/2,size,size*1.2); break;
+    }
+  });
+
+  requestAnimationFrame(draw);
+}
+
+draw();
+updateHUD();
+</script>
+</body>
+</html>
